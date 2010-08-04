@@ -1,0 +1,31 @@
+Name:                ipatch
+Version:             0.1
+Synopsis:            interactive patch editor
+Description:
+ ipatch brings the power and convenience selecting and editing patches in Darcs
+ to those not using the Darcs version control system. 
+Homepage:            http://darcs.nomeata.de/ipatch
+License:             GPL-2
+License-file:        LICENSE
+Author:              Joachim Breitner
+Maintainer:          mail@joachim-breitner.de
+Copyright:           2010 Joachim Breitner 
+Stability:           Experimental
+Category:            Development
+Build-type:          Simple
+Cabal-version:       >=1.2
+
+
+Executable ipatch
+  Main-is:           ipatch.hs
+  Build-depends:     darcs (>= 2.4.98.1) 
+                     , base >=3 && <5
+                     , bytestring, filepath, directory
+  Other-modules:     Apply
+                     DiffFile
+                     Split
+                     Version
+                     Common
+                     Help
+                     Setup
+                     TheCommands 
