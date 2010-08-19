@@ -108,10 +108,10 @@ splitCmd opts [unfixed_patchesfile] = do
             createDirectory "old" -- Find nicer names based on original directory name
             createDirectory "new"
 
-            withCurrentDirectory "new" $ apply init_ps 
+            withCurrentDirectory "new" $ apply [] init_ps 
             let applyAndDiff last next name = do
-                withCurrentDirectory "old" $ apply last
-                withCurrentDirectory "new" $ apply next
+                withCurrentDirectory "old" $ apply [] last
+                withCurrentDirectory "new" $ apply [] next
                 output <- renderPS <$> execPipeIgnoreError "diff" ["-u","-r","old","new"] empty
                 putStrLn $ "Writing File " ++ name ++ " .."
                 B.writeFile (maindir </> name) output

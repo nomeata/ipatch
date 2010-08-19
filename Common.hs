@@ -13,7 +13,7 @@ import Darcs.Repository
       withRepoLock,
       invalidateIndex,
       unrecordedChanges )
-import Darcs.Flags ( UseIndex(..), ScanKnown(..), Compression(..) )
+import Darcs.Flags ( Compression(..) )
 import Darcs.RepoPath ( AbsolutePath, FilePathLike(..) )
 import Darcs.External ( clonePaths )
 import Darcs.Lock ( withTempDir )
@@ -37,9 +37,9 @@ initializeBaseState rdir sdir files = do
     -- Create a patch from the newly added files
     debugMessage $ "Creating initial check  in patch"
     withRepoLock [LookForAdds] $ \repo -> do
-        init_ps <- unrecordedChanges (IgnoreIndex,ScanAll) repo [] -- Correct flags?
+        init_ps <- unrecordedChanges [LookForAdds] repo [] -- Correct flags?
         init_patch <- n2pia <$> namepatch "NODATE" "Initial state" "NOAUTHOR" [] (fromPrims init_ps)
-        tentativelyAddPatch repo NoCompression init_patch
+        tentativelyAddPatch repo [] init_patch
         invalidateIndex repo
         withGutsOf repo (finalizeRepositoryChanges repo)
             `clarifyErrors` "Failed to apply inital patch"
@@ -54,7 +54,7 @@ diffToPrims diff = do
     debugMessage $ "Creating a patch from the user changes"
     withRepoLock [LookForAdds] $ \repo -> do
         -- Create another patch from the changed files
-        patch_ps <- unrecordedChanges (IgnoreIndex,ScanAll) repo []
+        patch_ps <- unrecordedChanges [LookForAdds] repo []
         -- patch_patch <- n2pia <$> namepatch date "Patch effect" author [] (fromPrims patch_ps)
         -- tentativelyAddPatch repo [] patch_patch
         -- Now we obliterate the patch, undoing its effects
