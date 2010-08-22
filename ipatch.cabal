@@ -2,8 +2,11 @@ Name:                ipatch
 Version:             0.1
 Synopsis:            interactive patch editor
 Description:
- ipatch brings the power and convenience selecting and editing patches in Darcs
- to those not using the Darcs version control system. 
+ ipatch brings the power and convenience of selecting and editing patches in
+ Darcs to those who are not using the Darcs version control system. 
+ .
+ It allows the user to interactively split a patch file into several patch
+ file, as well as applying a patch interactively and possibly partially.
 Homepage:            http://darcs.nomeata.de/ipatch
 License:             GPL-2
 License-file:        LICENSE
