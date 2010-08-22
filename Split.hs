@@ -112,7 +112,7 @@ splitCmd opts [unfixed_patchesfile] = do
             let applyAndDiff last next name = do
                 withCurrentDirectory "old" $ apply [] last
                 withCurrentDirectory "new" $ apply [] next
-                output <- renderPS <$> execPipeIgnoreError "diff" ["-u","-r","old","new"] empty
+                output <- renderPS <$> execPipeIgnoreError "diff" ["-Nur","old","new"] empty
                 putStrLn $ "Writing File " ++ name ++ " .."
                 B.writeFile (maindir </> name) output
             sequence_ $ zipWith3 applyAndDiff (init_ps : map fst chunks) (map fst chunks) (map snd chunks)

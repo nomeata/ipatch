@@ -1,4 +1,4 @@
-diff -u -r old/changes new/changes
+diff -Nur old/changes new/changes
 --- old/changes	ignored date
 +++ new/changes	ignored date
 @@ -1,5 +1,6 @@
@@ -8,7 +8,7 @@ diff -u -r old/changes new/changes
  
  version 0.1:
   * Initial Version
-diff -u -r old/src/code new/src/code
+diff -Nur old/src/code new/src/code
 --- old/src/code	ignored date
 +++ new/src/code	ignored date
 @@ -1,3 +1,3 @@
