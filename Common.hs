@@ -2,6 +2,10 @@
 module Common where
 
 import Control.Applicative ( (<$>) )
+import Control.Monad (when)
+import System.Posix.Files ( getSymbolicLinkStatus, isRegularFile, isDirectory )
+import System.Directory ( createDirectoryIfMissing, doesFileExist, removeFile )
+import System.FilePath.Posix ( (</>), takeDirectory, normalise )
 
 import Darcs.Arguments ( DarcsFlag(LookForAdds) )
 import Darcs.Repository
@@ -15,7 +19,7 @@ import Darcs.Repository
       unrecordedChanges )
 import Darcs.Flags ( Compression(..) )
 import Darcs.RepoPath ( AbsolutePath, FilePathLike(..) )
-import Darcs.External ( clonePaths )
+import Darcs.External ( cloneFile )
 import Darcs.Lock ( withTempDir )
 import Darcs.Patch ( invert, fromPrims, namepatch )
 import Darcs.Global ( debugMessage )
@@ -23,6 +27,32 @@ import Darcs.Hopefully ( n2pia )
 import Darcs.Utils ( clarifyErrors )
 
 import DiffFile ( applyDiff )
+
+clonePathWithDeletion :: FilePath -> FilePath -> FilePath -> IO ()
+clonePathWithDeletion source dest path = do
+    let source' = source </> path
+        dest' = dest </> path
+    ex <- doesFileExist source'
+    if ex
+     then do
+        fs <- getSymbolicLinkStatus source'
+        if isDirectory fs
+         then do
+            createDirectoryIfMissing True dest'
+         else
+            if isRegularFile fs
+             then do
+                createDirectoryIfMissing True (dest </> takeDirectory path)
+                cloneFile source' dest'
+             else
+                fail ("clonePathWithDeletion: Bad file " ++ source')
+     else do
+        exT <- doesFileExist dest'
+        when exT $ removeFile dest'
+   `catch` fail ("clonePathWithDeletion: Bad file " ++ source </> path)
+
+clonePathsWithDeletion source dest = mapM_ (clonePathWithDeletion source dest)
+
 
 withTempRepository :: String -> (AbsolutePath -> IO a) -> IO a
 withTempRepository name job =
@@ -33,7 +63,7 @@ withTempRepository name job =
 
 initializeBaseState rdir sdir files = do
     debugMessage $ "Copying " ++ show (length files) ++ " files to temporary repository."  
-    clonePaths sdir (toFilePath rdir) files
+    clonePathsWithDeletion sdir (toFilePath rdir) files
     -- Create a patch from the newly added files
     debugMessage $ "Creating initial check  in patch"
     withRepoLock [LookForAdds] $ \repo -> do

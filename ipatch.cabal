@@ -20,7 +20,7 @@ Executable ipatch
   Main-is:           ipatch.hs
   Build-depends:     darcs-beta (>= 2.4.98.3) 
                      , base >=3 && <5
-                     , bytestring, filepath, directory
+                     , unix, bytestring, filepath, directory
   Other-modules:     Apply
                      DiffFile
                      Split
