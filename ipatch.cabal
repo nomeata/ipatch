@@ -16,7 +16,7 @@ Copyright:           2010 Joachim Breitner
 Stability:           Experimental
 Category:            Development
 Build-type:          Simple
-Cabal-version:       >=1.2
+Cabal-version:       >=1.8
 
 
 Executable ipatch
