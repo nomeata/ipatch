@@ -14,7 +14,6 @@ import Darcs.Arguments ( DarcsFlag, fixFilePathOrStd, listFiles )
 import Darcs.Repository
     ( amNotInRepository, applyToWorking, withRepoLock )
 import Darcs.RepoPath ( FilePathLike(..) )
-import Darcs.External ( clonePaths )
 import Darcs.Patch ( Effect(effect) )
 import Workaround ( getCurrentDirectory )
 import Darcs.Global ( debugMessage )
@@ -31,7 +30,8 @@ import Common
     ( diffToPrims,
       initializeBaseState,
       withTempRepository,
-      stdindefault )
+      stdindefault,
+      clonePathsWithDeletion )
 import DiffFile ( filesTouchedByDiff, readDiffFile )
 
 applyHelp :: String
@@ -88,7 +88,7 @@ applyCmd opts [unfixed_patchesfile] = do
       
             yorn <- promptYorn "Really apply the selected changes?"
             when (yorn == 'y') $ do
-                clonePaths (toFilePath rdir) maindir files
+                clonePathsWithDeletion (toFilePath rdir) maindir files
 
         {-
         debugMessage $ "Printing selected parts"
