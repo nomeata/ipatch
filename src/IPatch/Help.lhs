@@ -18,7 +18,7 @@
 
 \darcsCommand{help}
 \begin{code}
-module Help (
+module IPatch.Help (
  helpCmd,
  commandControlList, environmentHelp,          -- these are for preproc.hs
  printVersion,
@@ -51,10 +51,11 @@ import Printer ( text )
 import Ssh
     ( environmentHelpSsh, environmentHelpScp, environmentHelpSshPort )
 import System.Exit ( ExitCode(..), exitWith )
-import Version ( version )
 import URL ( environmentHelpProxy, environmentHelpProxyPassword )
 import Workaround ( getCurrentDirectory )
-import qualified TheCommands as TheCommands ( commandControlList )
+
+import IPatch.Version ( version )
+import qualified IPatch.TheCommands as TheCommands ( commandControlList )
 
 helpDescription :: String
 helpDescription = "Display help about ipatch and ipatch commands."

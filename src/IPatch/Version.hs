@@ -1,4 +1,4 @@
-module Version (version) where
+module IPatch.Version (version) where
 
 import Data.Version
 

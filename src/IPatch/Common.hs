@@ -1,5 +1,5 @@
 {-# LANGUAGE Rank2Types #-}
-module Common where
+module IPatch.Common where
 
 import Control.Applicative ( (<$>) )
 import Control.Monad (when)
@@ -26,7 +26,7 @@ import Darcs.Global ( debugMessage )
 import Darcs.Hopefully ( n2pia )
 import Darcs.Utils ( clarifyErrors )
 
-import DiffFile ( applyDiff )
+import IPatch.DiffFile ( applyDiff )
 
 clonePathWithDeletion :: FilePath -> FilePath -> FilePath -> IO ()
 clonePathWithDeletion source dest path = do

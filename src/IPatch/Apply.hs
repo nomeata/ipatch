@@ -1,5 +1,5 @@
 {-# LANGUAGE Rank2Types #-}
-module Apply where
+module IPatch.Apply where
 
 import Control.Monad ( when )
 import System.Exit ( exitWith, ExitCode(ExitSuccess) )
@@ -26,13 +26,13 @@ import Darcs.SelectChanges
 import Darcs.Patch.Split ( primSplitter )
 import Darcs.Witnesses.Ordered ( (:>)(..), nullFL )
 
-import Common
+import IPatch.Common
     ( diffToPrims,
       initializeBaseState,
       withTempRepository,
       stdindefault,
       clonePathsWithDeletion )
-import DiffFile ( filesTouchedByDiff, readDiffFile )
+import IPatch.DiffFile ( filesTouchedByDiff, readDiffFile )
 
 applyHelp :: String
 applyHelp =

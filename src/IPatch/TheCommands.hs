@@ -1,8 +1,9 @@
-module TheCommands where
+module IPatch.TheCommands where
 
 import Darcs.Commands ( CommandControl(CommandData, GroupName) )
-import Apply ( apply )
-import Split ( split )
+
+import IPatch.Apply ( apply )
+import IPatch.Split ( split )
 
 commandControlList :: [CommandControl]
 commandControlList =

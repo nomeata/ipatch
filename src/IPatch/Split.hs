@@ -1,5 +1,5 @@
 {-# LANGUAGE Rank2Types #-}
-module Split where
+module IPatch.Split where
 
 import qualified Data.ByteString as B ( writeFile )
 import Control.Applicative ( (<$>) )
@@ -33,12 +33,12 @@ import Darcs.SelectChanges
 import Darcs.Patch.Split ( primSplitter )
 import Darcs.Witnesses.Ordered ( FL, (:>)(..), nullFL )
 
-import Common
+import IPatch.Common
     ( withTempRepository,
       initializeBaseState,
       diffToPrims,
       stdindefault )
-import DiffFile ( readDiffFile, filesTouchedByDiff )
+import IPatch.DiffFile ( readDiffFile, filesTouchedByDiff )
 
 splitHelp :: String
 splitHelp =

@@ -1,5 +1,5 @@
 {-# LANGUAGE Rank2Types #-}
-module DiffFile where
+module IPatch.DiffFile where
 
 
 import qualified Data.ByteString as B

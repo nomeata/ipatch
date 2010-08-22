@@ -20,15 +20,15 @@ Cabal-version:       >=1.8
 
 
 Executable ipatch
+  Hs-Source-Dirs:    src/
   Main-is:           ipatch.hs
   Build-depends:     darcs-beta (>= 2.4.98.3) 
                      , base >=3 && <5
                      , unix, bytestring, filepath, directory
-  Other-modules:     Apply
-                     DiffFile
-                     Split
-                     Version
-                     Common
-                     Help
-                     Setup
-                     TheCommands 
+  Other-modules:     IPatch.Apply
+                     IPatch.DiffFile
+                     IPatch.Split
+                     IPatch.Version
+                     IPatch.Common
+                     IPatch.Help
+                     IPatch.TheCommands 

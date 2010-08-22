@@ -4,8 +4,8 @@ import System.IO ( hSetBinaryMode, stdin, stdout )
 import Darcs.Flags ( DarcsFlag(Verbose) )
 import Darcs.RunCommand ( runTheCommand )
 
-import Version ( version )
-import Help
+import IPatch.Version ( version )
+import IPatch.Help
     ( commandControlList,
       helpCmd,
       listAvailableCommands,
