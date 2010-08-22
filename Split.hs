@@ -41,7 +41,15 @@ import Common
 import DiffFile ( readDiffFile, filesTouchedByDiff )
 
 splitHelp :: String
-splitHelp = "split help"
+splitHelp =
+    "The `ipatch split file.patch' lets the user select different parts (hunks) of the\n" ++
+    "given patch file. After making a choice for each hunk, the user has to provide a\n" ++
+    "file name where the selected changes are stored. This procedure is repeated until\n" ++
+    "each change in the original file has been selected for one output file.\n" ++
+    "\n"++
+    "No files are modified by this command. The output patch files are all written at the\n" ++
+    "of the process.\n"
+
 
 splitDescription :: String
 splitDescription = "Split a diff file interactively."

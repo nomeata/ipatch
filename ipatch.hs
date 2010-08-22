@@ -4,7 +4,7 @@ import System.IO ( hSetBinaryMode, stdin, stdout )
 import Darcs.Flags ( DarcsFlag(Verbose) )
 import Darcs.RunCommand ( runTheCommand )
 
-import Version ( version, context )
+import Version ( version )
 import Help
     ( commandControlList,
       helpCmd,
@@ -21,9 +21,6 @@ main = do
     ["--commands"]      -> listAvailableCommands
     ["-v"]              -> putStrLn version
     ["--version"]       -> putStrLn version
-    ["--exact-version"] -> do
-              --putStrLn $ "darcs compiled on "++__DATE__++", at "++__TIME__
-              putStrLn context
     _ -> do
       hSetBinaryMode stdin True
       hSetBinaryMode stdout True

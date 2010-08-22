@@ -1,4 +1,7 @@
-module Version where
+module Version (version) where
 
-version = "noversion"
-context = "nocontext"
+import Data.Version
+
+import qualified Paths_ipatch
+
+version = showVersion Paths_ipatch.version

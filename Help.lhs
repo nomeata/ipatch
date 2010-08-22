@@ -32,7 +32,7 @@ import Darcs.Commands
       DarcsCommand(..),
       disambiguateCommands,
       extractCommands,
-      getCommandHelp,
+      getCommandHelp, -- This still prints "darcs", need to revise API here.
       nodefaults,
       usageHelper )
 import Darcs.External ( viewDoc )
@@ -70,7 +70,8 @@ help = DarcsCommand {commandName = "help",
                      commandHelp = helpHelp,
                      commandDescription = helpDescription,
                      commandExtraArgs = -1,
-                     commandExtraArgHelp = ["[<DARCS_COMMAND> [DARCS_SUBCOMMAND]]  "],
+                     --commandExtraArgHelp = ["[<DARCS_COMMAND> [DARCS_SUBCOMMAND]]  "],
+                     commandExtraArgHelp = ["[<IPATCH_COMMAND>]  "],
                      commandCommand = \ x y -> helpCmd x y >> exitWith ExitSuccess,
                      commandPrereq = \_ -> return $ Right (),
                      commandGetArgPossibilities = return [],
@@ -82,8 +83,8 @@ usage :: [CommandControl] -> String
 usage cs = "Usage: ipatch COMMAND ...\n\nCommands:\n" ++
            usageHelper cs ++ "\n" ++
            "Use 'ipatch COMMAND --help' for help on a single command.\n" ++
-           "Use 'ipatch --version' to see the ipatch version number.\n" ++
-           "Use 'ipatch --exact-version' to get the exact version of this ipatch instance.\n"
+           "Use 'ipatch --version' to see the ipatch version number.\n"
+           -- "Use 'ipatch --exact-version' to get the exact version of this ipatch instance.\n"
            -- "Use 'ipatch help environment' for help on environment variables.\n" ++
            --"\n" ++
            --"Check bug reports at http://bugs.darcs.net/\n"
@@ -116,8 +117,8 @@ listAvailableCommands =
                 zip (extractCommands commandControlList) is_valid
        putStrLn "--help"
        putStrLn "--version"
-       putStrLn "--exact-version"
-       putStrLn "--overview"
+       -- putStrLn "--exact-version"
+       -- putStrLn "--overview"
     where isRight (Right _) = True
           isRight _ = False
 

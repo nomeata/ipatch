@@ -35,7 +35,13 @@ import Common
 import DiffFile ( filesTouchedByDiff, readDiffFile )
 
 applyHelp :: String
-applyHelp = "apply help"
+applyHelp =
+    "The `ipatch apply file.patch' command works similar to a `patch file.patch' command.\n" ++
+    "It will, however, prompt the user about each part of the patch, whether it should\n" ++
+    "be applied or not. Using the integrated hunk editor, the user has full control over\n" ++
+    "the chosen changes.\n"++
+    "\n"++
+    "No files are touched until the end, when the user is asked for a final confirmation.\n"
 
 applyDescription :: String
 applyDescription = "Apply a diff file interactively."
