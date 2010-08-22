@@ -21,7 +21,7 @@ export PATH="..:$PATH"
 
 perl -p -i -e 's/\d\d\d\d-\d\d-\d\d \d\d:\d\d:\d\d.\d+ .\d\d\d\d/ignored date/' patches/featureA.patch patches/addfile.patch patches/removefile.patch
 cd ..
-diff -r tmp after
+diff -ur after tmp
 rm -rf tmp
 echo "Test done"
 
