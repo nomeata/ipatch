@@ -1,0 +1,22 @@
+Index: test/changes
+===================================================================
+--- test.orig/changes	2010-08-03 16:42:39.000000000 +0200
++++ test/changes	2010-08-03 18:41:31.000000000 +0200
+@@ -1,5 +1,7 @@
+ unreleased:
+  * Some change
++ * Adding feature A
++ * Adding feature B
+ 
+ version 0.1:
+  * Initial Version
+Index: test/src/code
+===================================================================
+--- test.orig/src/code	2010-08-03 16:42:39.000000000 +0200
++++ test/src/code	2010-08-03 18:41:51.000000000 +0200
+@@ -1,3 +1,4 @@
+ This is the code.
+-It has some lines.
++It has some lines that we change to implement feature A.
+ That we want to edit.
++Here we add a line to implement feature B
