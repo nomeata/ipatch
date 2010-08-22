@@ -1,0 +1,5 @@
+diff -Nur old/src/oldfile new/src/oldfile
+--- old/src/oldfile	ignored date
++++ new/src/oldfile	ignored date
+@@ -1 +0,0 @@
+-This file should be removed

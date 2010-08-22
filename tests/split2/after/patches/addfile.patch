@@ -1,0 +1,5 @@
+diff -Nur old/src/newfile new/src/newfile
+--- old/src/newfile	ignored date
++++ new/src/newfile	ignored date
+@@ -0,0 +1 @@
++This is a newly added file.
