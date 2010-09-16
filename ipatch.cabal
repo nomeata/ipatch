@@ -22,7 +22,7 @@ Cabal-version:       >=1.8
 Executable ipatch
   Hs-Source-Dirs:    src/
   Main-is:           ipatch.hs
-  Build-depends:     darcs-beta (>= 2.4.98.3) 
+  Build-depends:     darcs (>= 2.4.98.5)
                      , base >=3 && <5
                      , unix, bytestring, filepath, directory
   Other-modules:     IPatch.Apply
