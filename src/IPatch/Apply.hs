@@ -22,12 +22,7 @@ module IPatch.Apply where
 import Control.Monad ( when )
 import System.Exit ( exitWith, ExitCode(ExitSuccess) )
 
-import Darcs.Commands
-    ( DarcsCommand(DarcsCommand, commandAdvancedOptions,
-                   commandArgdefaults, commandBasicOptions, commandCommand,
-                   commandDescription, commandExtraArgHelp, commandExtraArgs,
-                   commandGetArgPossibilities, commandHelp, commandName,
-                   commandPrereq) )
+import Darcs.Commands ( DarcsCommand(..) )
 import Darcs.Arguments ( DarcsFlag, fixFilePathOrStd, listFiles )
 import Darcs.Repository
     ( amNotInRepository, applyToWorking, withRepoLock )
@@ -65,7 +60,8 @@ applyDescription :: String
 applyDescription = "Apply a diff file interactively."
 
 apply :: DarcsCommand
-apply = DarcsCommand {commandName = "apply",
+apply = DarcsCommand {commandProgramName = "ipatch",
+                      commandName = "apply",
                       commandHelp = applyHelp,
                       commandDescription = applyDescription,
                       commandExtraArgs = 1,

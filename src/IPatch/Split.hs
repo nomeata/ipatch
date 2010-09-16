@@ -27,12 +27,7 @@ import Control.Monad.Fix ( fix )
 import System.Exit ( exitWith, ExitCode(ExitSuccess) )
 import System.FilePath ( (</>) )
 
-import Darcs.Commands
-    ( DarcsCommand(DarcsCommand, commandAdvancedOptions,
-                   commandArgdefaults, commandBasicOptions, commandCommand,
-                   commandDescription, commandExtraArgHelp, commandExtraArgs,
-                   commandGetArgPossibilities, commandHelp, commandName,
-                   commandPrereq) )
+import Darcs.Commands ( DarcsCommand(..) )
 import Darcs.Arguments ( DarcsFlag, fixFilePathOrStd, listFiles )
 import Darcs.Repository ( amNotInRepository )
 import Darcs.External ( execPipeIgnoreError )
@@ -73,7 +68,8 @@ splitDescription :: String
 splitDescription = "Split a diff file interactively."
 
 split :: DarcsCommand
-split = DarcsCommand {commandName = "split",
+split = DarcsCommand {commandProgramName = "ipatch",
+                      commandName = "split",
                       commandHelp = splitHelp,
                       commandDescription = splitDescription,
                       commandExtraArgs = 1,

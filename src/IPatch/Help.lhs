@@ -67,7 +67,8 @@ helpHelp =
  "`ipatch help foo' prints detailed help about the ipatch command foo.\n"
 
 help :: DarcsCommand
-help = DarcsCommand {commandName = "help",
+help = DarcsCommand {commandProgramName = "ipatch",
+                     commandName = "help",
                      commandHelp = helpHelp,
                      commandDescription = helpDescription,
                      commandExtraArgs = -1,
