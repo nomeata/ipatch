@@ -18,7 +18,7 @@ export PATH="..:$PATH"
 )| $IPATCH apply patches/testpatch
 
 cd ..
-diff -ur after tmp
+diff -Nur after tmp
 rm -rf tmp
 echo "Test done"
 

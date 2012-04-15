@@ -21,22 +21,40 @@ module IPatch.DiffFile where
 
 
 import qualified Data.ByteString as B
-    ( ByteString, null, hGetContents, readFile )
+    ( ByteString, null, hGetContents, readFile, hPutStr )
 import qualified Data.ByteString.Char8 as BC ( unpack )
-import System.IO ( stdin )
+import System.IO ( stdin, openBinaryFile, IOMode(..), hClose )
+import System.Process ( createProcess, proc, CreateProcess(..), StdStream(..), waitForProcess )
+import System.Exit ( ExitCode(..) )
 import Control.Applicative ( (<$>) )
-import Darcs.RepoPath ( FilePathLike(..), useAbsoluteOrStd )
+import Darcs.RepoPath ( FilePathLike(..), AbsolutePathOrStd, useAbsoluteOrStd )
 import Darcs.External ( execDocPipe )
 import Printer ( packedString, renderPS )
 import ByteStringUtils ( linesPS )
 
 newtype DiffFile = DiffFile B.ByteString
 
+readDiffFile :: AbsolutePathOrStd -> IO DiffFile
 readDiffFile = fmap DiffFile . useAbsoluteOrStd (B.readFile . toFilePath) (B.hGetContents stdin) 
 
+filesTouchedByDiff :: DiffFile -> IO [FilePath]
 filesTouchedByDiff (DiffFile bs) = map BC.unpack . filter (not . B.null) . linesPS <$> execPSPipe "diffstat" ["-l","-p1"] bs
 
-applyDiff (DiffFile bs) = execPSPipe "patch" ["-r","-","-p1"] bs
+applyDiff :: DiffFile -> IO Bool
+applyDiff (DiffFile bs) = do
+    devNull <- openBinaryFile "/dev/null" WriteMode
+    (Just i,_,_,pid) <- createProcess (proc "patch" ["--reject-file","-","--strip","1"])
+        { std_out = UseHandle devNull
+        , std_err = Inherit
+        , std_in = CreatePipe }
+    B.hPutStr i bs
+    hClose i
+    rval <- waitForProcess pid
+    case rval of
+        ExitSuccess     -> return True
+        ExitFailure 1   -> return False
+        ExitFailure 127 -> fail $ "patch not found"
+        _               -> fail $ "patch failed"
 
 
 execPSPipe :: String -> [String] -> B.ByteString -> IO B.ByteString

@@ -16,16 +16,17 @@
  - the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
  - Boston, MA 02110-1301, USA.
  -}
-{-# LANGUAGE Rank2Types #-}
+{-# LANGUAGE Rank2Types, ScopedTypeVariables #-}
 module IPatch.Apply where
 
 import Control.Monad ( when )
 import System.Exit ( exitWith, ExitCode(ExitSuccess) )
+import Data.Functor
 
 import Darcs.Commands ( DarcsCommand(..) )
-import Darcs.Arguments ( DarcsFlag, fixFilePathOrStd, listFiles )
+import Darcs.Arguments ( DarcsFlag(..), fixFilePathOrStd, listFiles )
 import Darcs.Repository
-    ( amNotInRepository, applyToWorking, withRepoLock )
+    ( amNotInRepository, applyToWorking, withRepoLock, RepoJob(..), Repository )
 import Darcs.RepoPath ( FilePathLike(..) )
 import Darcs.Patch ( Effect(effect) )
 import Workaround ( getCurrentDirectory )
@@ -37,7 +38,8 @@ import Darcs.SelectChanges
       selectChanges,
       selectionContextPrim )
 import Darcs.Patch.Split ( primSplitter )
-import Darcs.Witnesses.Ordered ( (:>)(..), nullFL )
+import Darcs.Witnesses.Ordered ( (:>)(..), nullFL, FL )
+import Darcs.Witnesses.Sealed ( Sealed(Sealed), Sealed2(..), unsafeUnseal, unseal)
 
 import IPatch.Common
     ( diffToPrims,
@@ -82,13 +84,14 @@ applyCmd opts [unfixed_patchesfile] = do
     files <- filesTouchedByDiff diffPS
     if null files
       then putStrLn "Patch seems to be empty"
-      else withTempRepository "work" $ \rdir -> do
-        initializeBaseState rdir maindir files
+      else withTempRepository "work" $ \rdir -> withRepoLock [LookForAdds] $ RepoJob $ \(repo :: Repository p r u t) -> do
 
-        patch_ps <- diffToPrims diffPS
+        (_, repo) <- initializeBaseState rdir maindir files repo
+
+        Sealed patch_ps <- diffToPrims diffPS repo
 
         -- Ask the user which parts of the patch to apply
-        let context = selectionContextPrim "apply" [] (Just primSplitter) []
+        let context = selectionContextPrim "apply" [] (Just primSplitter) Nothing Nothing
         let selector = selectChanges First patch_ps
         (wanted_ps :> _) <- runSelection selector context
 
@@ -96,19 +99,13 @@ applyCmd opts [unfixed_patchesfile] = do
             putStrLn "You selected nothing, so I'm exiting!"
             exitWith ExitSuccess
         debugMessage $ "Applying selected patches"
-        withRepoLock [] $ \repo -> do
-            {- wanted_patch <- namepatch "NODATE" "Chosen Patch" "NOAUTHOR" [] (fromPrims wanted_ps)
-            tentativelyAddPatch repo [] $ n2pia wanted_patch
-            invalidateIndex repo
-            withGutsOf repo (finalizeRepositoryChanges repo)
-                        `clarifyErrors` "Failed to apply inital patch"
-            -}
-            applyToWorking repo opts (effect wanted_ps) `catch` \e ->
-                    fail ("Error applying patch to working dir:\n" ++ show e)
-      
-            yorn <- promptYorn "Really apply the selected changes?"
-            when (yorn == 'y') $ do
-                clonePathsWithDeletion (toFilePath rdir) maindir files
+
+        applyToWorking repo opts wanted_ps `catch` \e ->
+                fail ("Error applying patch to working dir:\n" ++ show e)
+  
+        yorn <- promptYorn "Really apply the selected changes?"
+        when yorn $ do
+            clonePathsWithDeletion (toFilePath rdir) maindir files
 
         {-
         debugMessage $ "Printing selected parts"

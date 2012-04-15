@@ -16,7 +16,7 @@
  - the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
  - Boston, MA 02110-1301, USA.
  -}
-{-# LANGUAGE Rank2Types #-}
+{-# LANGUAGE Rank2Types, ScopedTypeVariables, GADTs #-}
 module IPatch.Split where
 
 import qualified Data.ByteString as B ( writeFile )
@@ -28,11 +28,11 @@ import System.Exit ( exitWith, ExitCode(ExitSuccess) )
 import System.FilePath ( (</>) )
 
 import Darcs.Commands ( DarcsCommand(..) )
-import Darcs.Arguments ( DarcsFlag, fixFilePathOrStd, listFiles )
-import Darcs.Repository ( amNotInRepository )
+import Darcs.Arguments ( DarcsFlag(..), fixFilePathOrStd, listFiles )
+import Darcs.Repository ( amNotInRepository, withRepoLock, RepoJob(..), Repository )
 import Darcs.External ( execPipeIgnoreError )
 import Darcs.Lock ( withTempDir )
-import Darcs.Patch ( Prim, apply )
+import Darcs.Patch ( apply, PrimOf )
 import Printer ( empty, renderPS )
 import Workaround ( getCurrentDirectory )
 import Darcs.Global ( debugMessage )
@@ -44,7 +44,8 @@ import Darcs.SelectChanges
       selectChanges,
       selectionContextPrim )
 import Darcs.Patch.Split ( primSplitter )
-import Darcs.Witnesses.Ordered ( FL, (:>)(..), nullFL )
+import Darcs.Witnesses.Ordered ( FL(..), (:>)(..), nullFL, mapFL )
+import Darcs.Witnesses.Sealed ( Sealed(Sealed), Sealed2(..) )
 
 import IPatch.Common
     ( withTempRepository,
@@ -90,38 +91,38 @@ splitCmd opts [unfixed_patchesfile] = do
     files <- filesTouchedByDiff diffPS
     if null files
       then putStrLn "Patch seems to be empty"
-      else withTempRepository "work" $ \rdir -> do
-        init_ps <- initializeBaseState rdir maindir files
-        patch_ps <- diffToPrims diffPS
+      else withTempRepository "work" $ \rdir -> withRepoLock [LookForAdds] $ RepoJob $ \(repo :: Repository p r u r) -> do
 
-        let run :: (FL Prim -> Int -> IO [(FL Prim,String)]) ->
-                   (FL Prim -> Int -> IO [(FL Prim,String)])
-            run repeat remaining_ps n = if nullFL remaining_ps then return [] else do
+        (init_ps, (repo :: Repository p r r r)) <- initializeBaseState rdir maindir files repo
+        Sealed (patch_ps :: FL (PrimOf p) r d) <- diffToPrims diffPS repo
+
+        when (nullFL patch_ps) $ do
+            putStrLn "Patch seems to be empty"
+            exitWith ExitSuccess
+
+        let run :: forall x y. 
+                (forall x y . (FL (PrimOf p) x y) -> Int -> IO (FL (Annotated (FL (PrimOf p)) String) x y)) ->
+                (FL (PrimOf p) x y) -> Int -> IO (FL (Annotated (FL (PrimOf p)) String) x y)
+            run repeat remaining_ps n = case remaining_ps of
+                NilFL -> return NilFL; _ -> do
                 putStrLn $ "Please select the changes for the " ++ ordinal n ++ " patch"
-                --putStrLn $ "To choose " ++ show remaining_ps
-                let context = selectionContextPrim "split" [] (Just primSplitter) []
+                let context = selectionContextPrim "split" [] (Just primSplitter) Nothing Nothing
                 let selector = selectChanges First remaining_ps
                 (chosen_ps :> remaining_ps') <- runSelection selector context
-                {- we need to force chosen_ps before accessing remaining_ps',
-                 - see pull_only_firsts in ./Darcs/Patch/Choices.hs. There is a reason
-                 - why unsafeReadIO is called unsafe...-}
-                --length (show chosen_ps) `seq` return ()
-                --length (show remaining_ps') `seq` return ()
                 if (nullFL chosen_ps) 
                   then do
                     yorn <- promptYorn "You selected nothing. Do you want to abort?"
-                    when (yorn == 'y') $ do
+                    when yorn $ do
                         exitWith ExitSuccess
                     repeat remaining_ps n
                   else do
                     filename <- askUser $ "Please enter filename for the " ++ ordinal n ++ " patch: "
-                    --putStrLn $ "Chosen " ++ show chosen_ps
-                    --putStrLn $ "Left " ++ show remaining_ps'
-                    ((chosen_ps,filename) :) <$> repeat remaining_ps' (succ n)
+                    ((Annotated chosen_ps filename) :>:) <$> repeat remaining_ps' (succ n)
 
-        chunks <- fix run patch_ps 1
+        (chunks :: FL (Annotated (FL (PrimOf p)) String) r d) <- run undefined patch_ps 1
+        let sealeadChunks = mapFL (\(Annotated a b) -> (Sealed2 a, b)) chunks
 
-        when (null chunks) $ do
+        when (nullFL chunks) $ do
             putStrLn "No patched splitted, exiting."
             exitWith ExitSuccess
 
@@ -130,17 +131,18 @@ splitCmd opts [unfixed_patchesfile] = do
             createDirectory "old" -- Find nicer names based on original directory name
             createDirectory "new"
 
-            withCurrentDirectory "new" $ apply [] init_ps 
-            let applyAndDiff last next name = do
-                withCurrentDirectory "old" $ apply [] last
-                withCurrentDirectory "new" $ apply [] next
+            withCurrentDirectory "new" $ apply init_ps 
+            let applyAndDiff (Sealed2 last) (Sealed2 next) name = do
+                withCurrentDirectory "old" $ apply last
+                withCurrentDirectory "new" $ apply next
                 output <- renderPS <$> execPipeIgnoreError "diff" ["-Nur","old","new"] empty
                 putStrLn $ "Writing File " ++ name ++ " .."
                 B.writeFile (maindir </> name) output
-            sequence_ $ zipWith3 applyAndDiff (init_ps : map fst chunks) (map fst chunks) (map snd chunks)
-
+            sequence_ $ zipWith3 applyAndDiff (Sealed2 init_ps : map fst sealeadChunks) (map fst sealeadChunks) (map snd sealeadChunks)
 
 ordinal 1 = "first"
 ordinal 2 = "second"
 ordinal 3 = "third"
 ordinal n = show n ++ "th"
+
+data Annotated a b x y = Annotated (a x y) b

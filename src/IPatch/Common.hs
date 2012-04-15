@@ -16,18 +16,21 @@
  - the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
  - Boston, MA 02110-1301, USA.
  -}
-{-# LANGUAGE Rank2Types #-}
+{-# LANGUAGE Rank2Types, ScopedTypeVariables, TypeFamilies, GADTs #-}
 module IPatch.Common where
 
 import Control.Applicative ( (<$>) )
-import Control.Monad (when)
+import Control.Monad ( when, unless )
 import System.Posix.Files ( getSymbolicLinkStatus, isRegularFile, isDirectory )
 import System.Directory ( createDirectoryIfMissing, doesFileExist, removeFile )
 import System.FilePath.Posix ( (</>), takeDirectory, normalise )
+import System.Exit ( exitWith, ExitCode(..) )
 
 import Darcs.Arguments ( DarcsFlag(LookForAdds) )
 import Darcs.Repository
-    ( createRepository,
+    ( RepoJob(..),
+      Repository,
+      createRepository,
       applyToWorking,
       finalizeRepositoryChanges,
       tentativelyAddPatch,
@@ -35,16 +38,21 @@ import Darcs.Repository
       withRepoLock,
       invalidateIndex,
       unrecordedChanges )
-import Darcs.Flags ( Compression(..) )
+import Darcs.Flags ( Compression(..), UseIndex(..), ScanKnown(..) )
 import Darcs.RepoPath ( AbsolutePath, FilePathLike(..) )
 import Darcs.External ( cloneFile )
 import Darcs.Lock ( withTempDir )
-import Darcs.Patch ( invert, fromPrims, namepatch )
+import Darcs.Patch ( invert, fromPrims, namepatch, PrimOf, RepoPatch )
 import Darcs.Global ( debugMessage )
-import Darcs.Hopefully ( n2pia )
-import Darcs.Utils ( clarifyErrors )
+import Darcs.Patch.PatchInfoAnd ( n2pia )
+import Darcs.Utils ( clarifyErrors, promptYorn )
+import Darcs.Witnesses.Ordered ( nullFL, FL(..) )
+import Darcs.Witnesses.Sealed ( Sealed(Sealed), Sealed2(..) )
+import Darcs.Witnesses.Sealed ( Sealed(Sealed), Sealed2(..), unsafeUnseal2 )
+import Darcs.Patch.Apply ( ApplyState )
+import Storage.Hashed.Tree ( Tree )
 
-import IPatch.DiffFile ( applyDiff )
+import IPatch.DiffFile ( applyDiff, DiffFile )
 
 clonePathWithDeletion :: FilePath -> FilePath -> FilePath -> IO ()
 clonePathWithDeletion source dest path = do
@@ -79,36 +87,67 @@ withTempRepository name job =
         createRepository []
         job rdir
 
-initializeBaseState rdir sdir files = do
-    debugMessage $ "Copying " ++ show (length files) ++ " files to temporary repository."  
-    clonePathsWithDeletion sdir (toFilePath rdir) files
-    -- Create a patch from the newly added files
-    debugMessage $ "Creating initial check  in patch"
-    withRepoLock [LookForAdds] $ \repo -> do
-        init_ps <- unrecordedChanges [LookForAdds] repo [] -- Correct flags?
+initializeBaseState
+  :: (FilePathLike a, RepoPatch p, ApplyState p ~ Tree) =>
+     a -> FilePath -> [FilePath] -> Repository p r u r ->
+         IO (FL (PrimOf p) r r', Repository p r r' r')
+initializeBaseState rdir sdir files repo = do
+
+        -- There should be no local changes:
+        pend <- unrecordedChanges (IgnoreIndex, ScanAll) repo Nothing
+        (repo :: Repository p r r r) <- case pend of
+            NilFL -> return repo
+            _ -> fail $ "Repo passed to initializeBaseState has unrecord changes"
+    
+        debugMessage $ "Copying " ++ show (length files) ++ " files to temporary repository."  
+        clonePathsWithDeletion sdir (toFilePath rdir) files
+
+        -- Change the phantom type here.
+        (repo :: Repository p r r' r) <- return $ unsafeUnseal2 (Sealed2 repo)
+
+        -- Create a patch from the newly added files
+        debugMessage $ "Creating initial check in patch"
+        init_ps <- unrecordedChanges (IgnoreIndex, ScanAll) repo Nothing -- Correct flags?
         init_patch <- n2pia <$> namepatch "NODATE" "Initial state" "NOAUTHOR" [] (fromPrims init_ps)
-        tentativelyAddPatch repo [] init_patch
+        repo <- tentativelyAddPatch repo NoCompression init_patch
         invalidateIndex repo
         withGutsOf repo (finalizeRepositoryChanges repo)
             `clarifyErrors` "Failed to apply inital patch"
-        return init_ps
+        return (init_ps, repo)
 
 
-diffToPrims diff = do
+diffToPrims
+  :: (RepoPatch p, ApplyState p ~ Tree, ApplyState (PrimOf p) ~ Tree) =>
+     DiffFile -> Repository p r t t -> IO (Sealed (FL (PrimOf p) t))
+diffToPrims diff repo = do
+
     debugMessage $ "Applying the user provided diff"
     -- Now apply the patch
-    applyDiff diff
+    ok <- applyDiff diff
+
+    -- Change the phantom type here.
+    (repo :: Repository p r u' t) <- return $ unsafeUnseal2 (Sealed2 repo)
 
     debugMessage $ "Creating a patch from the user changes"
-    withRepoLock [LookForAdds] $ \repo -> do
-        -- Create another patch from the changed files
-        patch_ps <- unrecordedChanges [LookForAdds] repo []
-        -- patch_patch <- n2pia <$> namepatch date "Patch effect" author [] (fromPrims patch_ps)
-        -- tentativelyAddPatch repo [] patch_patch
-        -- Now we obliterate the patch, undoing its effects
-        applyToWorking repo [] (invert patch_ps) `catch` \e ->
-            fail ("Couldn't undo diff effect in working dir.\n" ++ show e)
-        return patch_ps
+    -- Create another patch from the changed files
+    patch_ps <- unrecordedChanges (IgnoreIndex, ScanAll) repo Nothing
+
+    unless ok $
+        if nullFL patch_ps
+        then do
+            putStrLn $ "The patch did not apply cleanly. Aborting."
+            exitWith (ExitFailure 1)
+        else do
+            putStrLn $ "The patch did fully apply cleanly. "
+            yorn <- promptYorn "Do you want to continue with the partially applied patch?"
+            unless yorn $ do
+                exitWith $ ExitFailure 1
+
+    -- Now we obliterate the patch, undoing its effects
+    applyToWorking repo [] (invert patch_ps) `catch` \e ->
+        fail ("Couldn't undo diff effect in working dir.\n" ++ show e)
+
+    return (Sealed patch_ps)
       
 stdindefault :: a -> [String] -> IO [String]
 stdindefault _ [] = return ["-"]

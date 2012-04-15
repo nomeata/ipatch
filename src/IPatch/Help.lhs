@@ -48,8 +48,6 @@ import Data.Char ( isAlphaNum, toLower )
 import Data.List ( groupBy )
 import English ( andClauses )
 import Printer ( text )
-import Ssh
-    ( environmentHelpSsh, environmentHelpScp, environmentHelpSshPort )
 import System.Exit ( ExitCode(..), exitWith )
 import URL ( environmentHelpProxy, environmentHelpProxyPassword )
 import Workaround ( getCurrentDirectory )

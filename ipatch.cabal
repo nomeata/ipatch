@@ -1,5 +1,5 @@
 Name:                ipatch
-Version:             0.1
+Version:             0.1.1
 Synopsis:            interactive patch editor
 Description:
  ipatch brings the power and convenience of selecting and editing patches in
@@ -18,13 +18,20 @@ Category:            Development
 Build-type:          Simple
 Cabal-version:       >=1.8
 
+Flag darcs-beta
+  Description: Use a beta release of darcs 
+  Default: False
 
 Executable ipatch
   Hs-Source-Dirs:    src/
   Main-is:           ipatch.hs
-  Build-depends:     darcs (>= 2.4.98.5)
-                     , base >=3 && <5
-                     , unix, bytestring, filepath, directory
+  Build-depends:     base >=3 && <5
+                     , unix, bytestring, filepath, directory, process,
+                     hashed-storage
+  if flag(darcs-beta)
+    Build-depends:   darcs-beta (>= 2.4.98.5)
+  else             
+    Build-depends:   darcs (>= 2.4.98.5)
   Other-modules:     IPatch.Apply
                      IPatch.DiffFile
                      IPatch.Split
@@ -32,3 +39,7 @@ Executable ipatch
                      IPatch.Common
                      IPatch.Help
                      IPatch.TheCommands 
+
+source-repository head
+  type:     darcs
+  location: http://darcs.nomeata.de/ipatch/
